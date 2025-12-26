@@ -11,9 +11,10 @@ The following outlines the objectives of our code.
 Send drone camera video stream to ground control station where it will be recorded and used for 3D mapping where a user can measure distances between selected points.
 
 ## Progress
-- [ ] Easy - DepthAI script that sends a compressed (MJPEG or H264 or H265) video stream to the ground control station. All frames are then collected for the next task.
-- [ ] Medium - Create a 3D map from the collected frames using SpectacularAI SDK.
-- [ ] Easy - Implement a distance measurement tool for the 3D map
+- [ ] Easy - DepthAI script that sends a IMU + Color + Depth streams to the ground control station. All frames are then collected for 3D mapping.
+- [ ] Medium - Create a 3D map from the collected frames. Libraries: [nvblox](https://nvidia-isaac.github.io/nvblox/), Spectacular AI
+- [ ] Easy - Implement a distance measurement tool for the 3D map (might not be needed if the 3D mapping library can already do it)
+- [ ] Easy - Payload loading/unloading script
 
 # Task 2
 ## Stage 1 - Target detection & Initialization
@@ -46,5 +47,5 @@ If the water stream is strong, the camera should be able to see a line. This lin
   - [ ] Medium - Implement obstacle avoidance to the target approach script.
     - [ ] Hard - Implement path reroute when facing an obstacle.
 - [ ] Hard - Water trajectory and activation script.
-  - [ ] Send photo of extinguished target to GCS
+  - [ ] Easy - Send photo of extinguished target to GCS
 - [ ] Combining all scripts into one program
