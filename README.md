@@ -13,15 +13,19 @@ Optical flow:
 Since water flow will look white/light gray, we can mask threshold the image to remove any other color.
 
 An example of a threshold over saturation channel:
+
 ![Result](results/watering_lawn/hsv_saturation.png)
 
 An example of a threshold over value channel:
+
 ![Result](results/watering_lawn/hsv_value.png)
 
 Combining the two results gives:
+
 ![Result](results/watering_lawn/value_satruation_blend.png)
 
 Optical flow results can be masked with the combined channel results:
+
 ![Result](results/watering_lawn/masked_optical_flow.png)
 
 Compared to previously:
