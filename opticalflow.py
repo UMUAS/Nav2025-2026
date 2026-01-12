@@ -17,9 +17,9 @@ def main():
     cv.createTrackbar('Min. Val', 'Frame', 140, 255, lambda _: None)
     # cv.createTrackbar('Blur', 'Frame', 3, 7, lambda _: None)
 
-    # cap = cv.VideoCapture('vid/lawn_watering.mp4')
+    cap = cv.VideoCapture('vid/lawn_watering.mp4')
     # cap = cv.VideoCapture('vid/sprinkler.mp4')
-    cap = cv.VideoCapture('vid/apt_fire.mp4')
+    # cap = cv.VideoCapture('vid/apt_fire.mp4')
 
     ret, src0 = cap.read()
     frame0 = rescale(src0)
@@ -70,14 +70,12 @@ def main():
         if k == 27:
             break
         elif k == ord('s'):
-            cv.imwrite('frame.png', frame)
-            cv.imwrite('hsv_value.png', val)
-            cv.imwrite('hsv_saturation.png', sat)
-            cv.imwrite('value_satruation_blend.png', comb)
-            cv.imwrite('optical_flow.png', bgr)
-
-            # cv.imwrite('opticalfb.png', frame)
-            # cv.imwrite('opticalhsv.png', bgr)
+            cv.imwrite('results/frame.png', frame)
+            cv.imwrite('results/hsv_value.png', val)
+            cv.imwrite('results/hsv_saturation.png', sat)
+            cv.imwrite('results/value_satruation_blend.png', comb)
+            cv.imwrite('results/optical_flow.png', bgr)
+            cv.imwrite('results/masked_optical_flow.png', masked_bgr)
 
         prvs = nxt
     
