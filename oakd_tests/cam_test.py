@@ -124,11 +124,11 @@ parser.add_argument('-btimeout', '--boot-timeout', default=30000,
 # parser.add_argument('-stress', action='store_true',
 #                     help="Run stress test. This will override all other options (except -d/--device) and will run a heavy pipeline until the user stops it.")
 
-parser.add_argument("-stereo", action="store_false", default=True,
+parser.add_argument("-stereo", action="store_true", default=False,
                     help="Create a stereo depth node if the device has a stereo pair.")
 
-# parser.add_argument("-yolo", type=str, default="",
-#                     help=f"Create a yolo detection network on the specified camera. E.g: -yolo cama. Available cameras: {ALL_SOCKETS}")
+parser.add_argument("-yolo", type=str, default="",
+                    help=f"Create a yolo detection network on the specified camera. E.g: -yolo cama. Available cameras: {ALL_SOCKETS}")
 
 # parser.add_argument("-gui", action="store_true",
 #                     help="Use GUI instead of CLI")
@@ -253,9 +253,10 @@ signal.signal(signal.SIGINT, exit_cleanly)
 
 # Connect to device, so that we can get connected cameras in case of no args
 success, device = dai.Device.getDeviceByMxId(args.device)
+# device = dai.DeviceInfo("192.168.168.197")
 dai_device_args = []
-if success:
-    dai_device_args.append(device)
+# if success:
+    # dai_device_args.append(device)
 with dai.Device(*dai_device_args) as device:
     cam_list = []
     cam_type_color = {}
@@ -475,8 +476,8 @@ with dai.Device(*dai_device_args) as device:
                 # stereo.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
                 stereo.setLeftRightCheck(True)
                 stereo.setExtendedDisparity(True)
-                # stereo.setSubpixel(True) #Original
-                stereo.setSubpixel(False)
+                stereo.setSubpixel(True) #Original
+                # stereo.setSubpixel(False)
                 stereo.setLeftRightCheck(True)
 
                 # cfg = stereo.initialConfig.get()
