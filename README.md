@@ -1,8 +1,23 @@
 # Nav2025-2026
 Repository for Navigation Section.
 
+## Requirements
+- Recommended: Ubuntu 24.04
+
+- [ArduPilot SITL](https://ardupilot.org/dev/docs/SITL-setup-landingpage.html) or using [Mission Planner's Simulation feature](https://ardupilot.org/planner/docs/mission-planner-simulation.html#mission-planner-simulation)
+
+- [Gazebo Fortress](https://gazebosim.org/docs/fortress/install/) for 3D simulation environment.
+
+- To install python dependencies, run requirements.txt: `pip install -r requirements.txt`
+
+- [ROS 2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
+- [RTAB-Map for ROS2](https://introlab.github.io/rtabmap/)
+
+## Other information
+
 Sensors used for Navigation:
 - [OAK-D Pro PoE](https://shop.luxonis.com/products/oak-d-pro-poe?variant=42469208916191)
+- RTK GPS?
 
 The following outlines the objectives of our code.
 
@@ -12,7 +27,7 @@ Send drone camera video stream to ground control station where it will be record
 
 ## Progress
 - [ ] Easy - DepthAI script that sends a IMU + Color + Depth streams to the ground control station. All frames are then collected for 3D mapping.
-- [ ] Medium - Create a 3D map from the collected frames. Libraries: [nvblox](https://nvidia-isaac.github.io/nvblox/), Spectacular AI
+- [ ] Medium - Create a 3D map from the collected frames. Libraries: [RTAB-Map](https://introlab.github.io/rtabmap/)
 - [ ] Easy - Implement a distance measurement tool for the 3D map (might not be needed if the 3D mapping library can already do it)
 - [ ] Easy - Payload loading/unloading script
 
@@ -27,7 +42,7 @@ In this stage, the drone will carefully approach the detected target while conti
 
 Once the drone approached to some distance away (for example, 1m) from the target, it should stabilize (stop moving) and move to stage 3.
 
-If camera is attached to a gimbal, the gimbal will need to move such that the target is always centered in the camera frame.
+If our camera is attached to a gimbal, the gimbal will need to move such that the target is always centered in the camera frame.
 
 ### Extras
 If at any point the target detection is lost (for more than a few frames), the drone should trace back its path and try a different route. After 3 failed route attempts.
