@@ -1,32 +1,29 @@
-# Nav2025-2026
-Repository for Navigation Section.
+# Nav2025-2026 - Overview
+This is the repository for the UMUAS Navigation section for the 2025-2026 AEAC SUAS Competition.
 
-## Requirements
-- Recommended: Ubuntu 24.04
+The following documentation is intended for anyone intersted in our code. It outlines the objectives of our code, as well as the dependencies and sensors used.
 
-- [ArduPilot SITL](https://ardupilot.org/dev/docs/SITL-setup-landingpage.html) or using [Mission Planner's Simulation feature](https://ardupilot.org/planner/docs/mission-planner-simulation.html#mission-planner-simulation)
-
-- [Gazebo Fortress](https://gazebosim.org/docs/fortress/install/) for 3D simulation environment.
-
+## Dependencies & Requirements
+- [ROS 2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html). ROS 2 Humble is needed for ArduPilot and will require Ubuntu 22.04 to work.
+- [Ubuntu 22.04](https://releases.ubuntu.com/jammy/). Can also be installed inside WSL (Windows Subsystem for Linux) instead of dual booting your computer.
+- [RTAB-Map for ROS2](https://introlab.github.io/rtabmap/). Used for 3D Mapping.
+- [ArduPilot SITL for ROS 2](https://ardupilot.org/dev/docs/ros2-sitl.html). ArduPilot's simulator.
+- [Gazebo Fortress](https://gazebosim.org/docs/fortress/install/) for 3D simulation environment with sensor integration. Gazebo Fortress is compatible with ROS 2 Humble.
 - To install python dependencies, run requirements.txt: `pip install -r requirements.txt`
-
-- [ROS 2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
-- [RTAB-Map for ROS2](https://introlab.github.io/rtabmap/)
 
 ## Other information
 
-Sensors used for Navigation:
-- [OAK-D Pro PoE](https://shop.luxonis.com/products/oak-d-pro-poe?variant=42469208916191)
+Physical components used for Navigation:
+- [OAK-D Pro](https://shop.luxonis.com/products/oak-d-pro?variant=42455252402399)
 - RTK GPS?
-
-The following outlines the objectives of our code.
+- Payload servos
 
 # Task 1
 ## 3D Mapping
 Send drone camera video stream to ground control station where it will be recorded and used for 3D mapping where a user can measure distances between selected points.
 
 ## Progress
-- [ ] Easy - DepthAI script that sends a IMU + Color + Depth streams to the ground control station. All frames are then collected for 3D mapping.
+- [ ] Easy - DepthAI script that stores IMU + Color + Depth data on the drone's computer (Jetson or Raspberry Pi, TBD). All frames are then collected for 3D mapping.
 - [ ] Medium - Create a 3D map from the collected frames. Libraries: [RTAB-Map](https://introlab.github.io/rtabmap/)
 - [ ] Easy - Implement a distance measurement tool for the 3D map (might not be needed if the 3D mapping library can already do it)
 - [ ] Easy - Payload loading/unloading script
