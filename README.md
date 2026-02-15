@@ -14,7 +14,7 @@ The following documentation is intended for anyone intersted in our code. It out
 ## Other information
 
 Physical components used for Navigation:
-- [OAK-D Pro](https://shop.luxonis.com/products/oak-d-pro?variant=42455252402399)
+- [OAK-D Pro](https://shop.luxonis.com/products/oak-d-pro?variant=42455252402399) - For 3D Mapping, obstacle detection, target detection, and general-purpose camera.
 - RTK GPS?
 - Payload servos
 
