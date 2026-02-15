@@ -61,3 +61,6 @@ If the water stream is strong, the camera should be able to see a line. This lin
 - [ ] Hard - Water trajectory and activation script.
   - [ ] Easy - Send photo of extinguished target to GCS
 - [ ] Combining all scripts into one program
+
+# Contributions
+- https://github.com/nigerianpickle/custom-circle-model
