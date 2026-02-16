@@ -95,8 +95,8 @@ echo "Installing required packages"
 Tools/environment_install/install-prereqs-ubuntu.sh -y
 . ~/.profile
 
-echo "Building ArduPilot code on Pixhawk6X"
-./waf configure --board Pixhawk6X
+echo "Building ArduPilot code"
+./waf configure --board sitl
 ./waf copter
 
 ##########################

@@ -4,11 +4,14 @@ This is the repository for the UMUAS Navigation section for the 2025-2026 AEAC S
 The following documentation is intended for anyone intersted in our code. It outlines the objectives of our code, as well as the dependencies and sensors used.
 
 ## Dependencies & Requirements
+For development, you can run [install_simulation.sh](/install_simulation.sh) for a quick installation of all the following:
 - [ROS 2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html). ROS 2 Humble is needed for ArduPilot and will require Ubuntu 22.04 to work.
 - [Ubuntu 22.04](https://releases.ubuntu.com/jammy/). Can also be installed inside WSL (Windows Subsystem for Linux) instead of dual booting your computer.
-- [RTAB-Map for ROS2](https://introlab.github.io/rtabmap/). Used for 3D Mapping.
 - [ArduPilot SITL for ROS 2](https://ardupilot.org/dev/docs/ros2-sitl.html). ArduPilot's simulator.
 - [Gazebo Fortress](https://gazebosim.org/docs/fortress/install/) for 3D simulation environment with sensor integration. Gazebo Fortress is compatible with ROS 2 Humble.
+
+Additionally:
+- [RTAB-Map for ROS2](https://introlab.github.io/rtabmap/). Used for 3D Mapping.
 - To install python dependencies, run requirements.txt: `pip install -r requirements.txt`
 
 ## Other information
