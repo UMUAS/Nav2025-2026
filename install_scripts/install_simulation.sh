@@ -137,7 +137,7 @@ echo "export PATH=\$PATH:$PWD/scripts" >> ~/.bashrc
 echo "Building ArduPilot ROS2 workspace"
 
 cd ~/ardu_ws
-colcon build
+colcon build --packages-up-to ardupilot_dds_tests
 
 ###########################
 # Install Gazebo Harmonic #
@@ -167,7 +167,7 @@ source /opt/ros/humble/setup.bash
 rosdep update
 rosdep install --from-paths src --ignore-src -y
 
-colcon build
+colcon build --packages-up-to ardupilot_gz_bringup
 
 echo "source ~/ardu_ws/install/setup.bash" >> ~/.bashrc
 

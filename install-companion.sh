@@ -1,1 +1,0 @@
-# Should install ROS2 Humble, ArduPilot ROS2 DDS Bridge, Micro-XRCE-DDS-Gen, and our custom ROS nodes.
