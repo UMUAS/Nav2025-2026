@@ -5,9 +5,9 @@
 > [!IMPORTANT]
 > For simulation, you **must** use [Ubuntu 22.04](https://releases.ubuntu.com/jammy/).
 > There are a few options to get Ubuntu 22.04 running:
-> 1) Run inside WSL (Windows Subsystem for Linux)
-> 2) Run inside a VM (Virtual Machine).
-> 3) Advanced: Dual boot your computer.
+> - Run inside WSL (Windows Subsystem for Linux)
+> - Run inside a VM (Virtual Machine).
+> - Advanced: Dual boot your computer.
 
 > [!TIP]
 > For development, you can run [install_simulation.sh](/scripts/install_simulation.sh) for a quick installation of ROS2, ArduPilot SITL, and Gazebo.
@@ -33,7 +33,7 @@ The following are the official installation guides for ArduPilot, ROS2, and Gaze
 
 ## Running Simulation
 There are a multiple options to simulate your code in simulation. These will be discussed in this section.
-### Option 1: Running the ArduPilot SITL without Gazebo in ROS2
+### __Option 1:__ Running the ArduPilot SITL without Gazebo in ROS2
 > Check out the guide [ArduPilot SITL using ROS2](https://ardupilot.org/dev/docs/ros2-sitl.html).
 
 To run the ArduPilot SITL in ROS2 without Gazebo, open a terminal and run:
@@ -55,7 +55,7 @@ arm throttle
 takeoff 40
 ```
 
-### Option 2: Running the ArduPilot SITL with Gazebo in ROS2
+### __Option 2:__ Running the ArduPilot SITL with Gazebo in ROS2
 > Check out the guide [Running ArduPilot with Gazebo using ROS2](https://ardupilot.org/dev/docs/ros2-gazebo.html#run-the-simulation).
 
 To run Gazebo and ArduPilot SITL in ROS2, you will need to run on 2 terminals.
