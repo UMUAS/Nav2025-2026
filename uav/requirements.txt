@@ -1,4 +1,3 @@
-asyncio
 opencv-python
 depthai
-pymavlink
+numpy
