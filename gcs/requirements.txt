@@ -1,4 +1,5 @@
-asyncio
 opencv-python
+rich
+argparse
 depthai
-pymavlink
+numpy
