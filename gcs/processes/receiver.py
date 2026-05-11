@@ -3,6 +3,7 @@
 #   
 #   Press:
 #       [q] - quit
+#       [s] - Request frames switch (on/off)
 #
 #   Sends:
 #       [timestamp:uint64]
@@ -18,7 +19,11 @@ import struct
 import time
 import asyncio
 import threading
+import json
 from pathlib import Path
+
+from rich.console import Console
+from rich.panel import Panel
 
 #import pymavlink
 import cv2 as cv
@@ -26,6 +31,21 @@ import numpy as np
 
 HOST = "100.89.62.208" #Raspberry Pi 4's Meshnet IP 
 PORT = 5000
+
+console = Console()
+console.set_window_title('Depth Frames Receiver')
+
+title = "[bold magenta]Depth Frames Receiver[/bold magenta]"
+description = (
+    "Receive depth frames from TCP server and save them locally.\n"
+)
+
+# Title + description panel
+console.print(Panel.fit(f"{title}\n\n{description}",border_style="blue"))
+
+console.print("\n[bold yellow]Inputs:[/bold yellow]")
+console.print(f"\t[red]\\[q] = Quit.[/red]")
+console.print(f"\t\\[s] = Request frames switch (on/off).")
 
 SAVE_DIR = Path("frames")
 SAVE_DIR.mkdir(exist_ok=True)
@@ -47,15 +67,25 @@ def nothing(x):
 win_name = 'frame_vis'
 
 current_frame = None
+current_filename = None
+req_auto = False
 
-def listen(sock):
-    global running, current_frame
+def listen(sock:socket.socket):
+    global running, current_frame, current_filename, req_auto
+
+    initial_bytes = sock.recv(8)
+    HFOV = struct.unpack('!d', initial_bytes)[0]
+
+    with open(SAVE_DIR / 'metadata.json', 'w') as f:
+        json.dump(HFOV, f)
 
     while running:
+        if not req_auto:
+            continue
         sock.sendall(b"GET_FRAME")
 
-        header = sock.recv(20) # 8 + 3*4 = 20 bytes
-        ts, w, h, size = struct.unpack("!QIII", header)
+        header = sock.recv(12) # 8 + 4 = 12 bytes
+        ts, size = struct.unpack("!QI", header)
 
         data = recv_exact(sock, size)
         
@@ -67,39 +97,42 @@ def listen(sock):
 
         filename = SAVE_DIR / f"received_{ts}.png"
         cv.imwrite(filename, depth)
+        current_filename = filename
 
-        print("Saved! ", filename, f' ({len(data)/1000}kb, {os.path.getsize(filename)/1000}kb)')
+        print("Saved! ", filename, f' ({len(data)/1000:.0f} kb)')
 
-        delay = cv.getTrackbarPos('Delay', 'menu')
+        delay = cv.getTrackbarPos('Delay (s)', 'menu')
         time.sleep(delay)
 
 def display():
-    global running, current_frame
+    global running, current_frame, current_filename, req_auto
 
     cv.namedWindow(win_name)
 
     cv.namedWindow('menu')
-    cv.createTrackbar('Delay', 'menu', 0, 10, nothing)
-    cv.setTrackbarMin('Delay', 'menu', 0)
-    # cv.createTrackbar('Threshold Filter', 'menu', 255, 255, nothing)
-    # cv.setTrackbarMin('Threshold Filter', 'menu', 0)
+    cv.createTrackbar('Delay (s)', 'menu', 0, 10, nothing)
+    cv.setTrackbarMin('Delay (s)', 'menu', 0)
 
     while True:
-        if current_frame is None:
-            time.sleep(1)
-
-        # thresh = cv.getTrackbarPos('Threshold Filter', 'menu')
-
-        # _, masked = cv.threshold(current_frame, thresh, 255, cv.THRESH_TOZERO_INV) #TODO Doesnt work
-        depth_vis = cv.normalize(current_frame, None, 0, 255, cv.NORM_MINMAX).astype(np.uint8)
-        depth_vis = cv.applyColorMap(depth_vis,cv.COLORMAP_JET)
-
-        cv.imshow(win_name, depth_vis)
-
         key = cv.waitKey(1)
         if key == ord('q'):
             running = False
             break
+        if key == ord('s'):
+            req_auto = not req_auto
+            console.print('Requesting frames: ', '[green]on[/green]' if req_auto else '[red]off[/red]')
+
+        if current_frame is None:
+            # time.sleep(1)
+            continue
+
+        if current_filename is not None:
+            cv.setWindowTitle(win_name, str(current_filename))
+
+        depth_vis = cv.normalize(current_frame, None, 0, 255, cv.NORM_MINMAX).astype(np.uint8)
+        depth_vis = cv.applyColorMap(depth_vis,cv.COLORMAP_JET)
+
+        cv.imshow(win_name, depth_vis)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print('Connecting to TCP server...')
@@ -115,7 +148,8 @@ displayer = threading.Thread(target=display)
 displayer.start()
 
 displayer.join()
-# listener.join()
+running = False
+listener.join()
 
 print('Exiting')
 sock.close()
