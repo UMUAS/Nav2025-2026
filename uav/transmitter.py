@@ -1,5 +1,11 @@
 #   transmitter.py
 #   Stream Stereo depth map from OAK-D camera over TCP
+#   
+#   Initial Send:
+#       [focal_length_x:float]
+#       [focal_length_y:float]
+#       [principal_point_x:float]
+#       [principal_point_y:float]
 #
 #   Sends:
 #       [timestamp:uint64]
@@ -12,6 +18,7 @@ import socket
 import struct
 import time
 import os
+import json
 
 import cv2 as cv
 import depthai as dai
@@ -48,12 +55,28 @@ print(f'Listening on {HOST}:{PORT}')
 print('Opening DepthAI pipeline...')
 pipeline.start()
 try:
+    # baseline_cm = pipeline.getCalibrationData().getBaselineDistance()
+    # intrinsics = pipeline.getCalibrationData().getCameraIntrinsics(dai.CameraBoardSocket.CAM_B)
+    HFOV = np.deg2rad(pipeline.getCalibrationData().getFov(dai.CameraBoardSocket.CAM_B))
+    # fx = intrinsics[0][0]
+    # fy = intrinsics[1][1]
+    # cx = intrinsics[0][2]
+    # cy = intrinsics[1][2]
+
+    with open(os.path.join(SAVE_DIR,'metadata.json'), 'w') as f:
+        # json.dump((baseline_cm,fx,fy,cx,cy), f)
+        json.dump(HFOV, f)
+
     # Server keeps waiting until connection accepted. When connection ends, keep waiting.
     while True:
         conn,addr = server.accept()
         print('Client connected: ', addr)
 
         try:
+            print('Sending camera intrinsics first')
+            # conn.sendall(struct.pack('!fffff', baseline_cm, fx, fy, cx, cy))
+            conn.sendall(struct.pack('!d', HFOV))
+
             while True:
                 conn_data = conn.recv(1024)
 
@@ -67,12 +90,11 @@ try:
                 if cmd == 'GET_FRAME':
                     t = int(time.time()*1000) #Accurate to the millisecond
 
-                    pipeline
                     frame = queue.get()
                     assert isinstance(frame, dai.ImgFrame)
                     
                     cvFrame = frame.getCvFrame()
-                    h, w = cvFrame.shape
+                    # h, w = cvFrame.shape
 
                     t1 = time.time()
                     _, encoded = cv.imencode('.png', cvFrame, [cv.IMWRITE_PNG_COMPRESSION, 5])
@@ -80,7 +102,7 @@ try:
 
                     cv.imwrite(f'{SAVE_DIR}/frame_{t}.png', encoded)
                     data = encoded.tobytes()
-                    conn.sendall(struct.pack('!QIII', t, w, h, len(data)) + data)
+                    conn.sendall(struct.pack('!QI', t, len(data)) + data)
         except ConnectionError as e:
             print(e, f' | Client {addr} may have disconnected.')
 finally:
