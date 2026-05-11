@@ -24,8 +24,7 @@ Send drone camera video stream to ground control station where it will be record
 ## Progress
 - [ ] Easy - DepthAI script that stores IMU + Color + Depth data on the drone's computer (Jetson or Raspberry Pi, TBD). All frames are then collected for 3D mapping.
 - [ ] Medium - Create a 3D map from the collected frames. Libraries: [RTAB-Map](https://introlab.github.io/rtabmap/)
-- [ ] Easy - Implement a distance measurement tool for the 3D map (might not be needed if the 3D mapping library can already do it)
-- [ ] Easy - Payload loading/unloading script
+- [x] Easy - Implement a distance measurement tool for the 3D map (might not be needed if the 3D mapping library can already do it)
 
 # Task 2
 ## Stage 1 - Target detection & Initialization
@@ -52,8 +51,8 @@ The sprayer should be activated for some time (for example, 5 seconds). After th
 If the water stream is strong, the camera should be able to see a line. This line can be helpful when there's strong wind because it provides feedback as to where the water is going (endpoint).
 
 ## Progress
-- [ ] Medium - Recording a dataset for the YOLO model.
-- [ ] Medium - Implementing the target detection script using YOLO and/or classical CV algorithms.
+- [x] Medium - Recording a dataset for the YOLO model. See: https://github.com/nigerianpickle/custom-circle-model
+- [x] Medium - Implementing the target detection script using YOLO and/or classical CV algorithms. See: https://github.com/nigerianpickle/custom-circle-model
 - [ ] Hard - Basic target approach script. This script will attempt to move the drone 1m away from a target using simple left/right/front/back/up/down movements.
   - [ ] Medium - Implement obstacle avoidance to the target approach script.
     - [ ] Hard - Implement path reroute when facing an obstacle.
