@@ -43,17 +43,24 @@ console.print(f"\t\\[d] = Increment index.")
 
 size = len(image_files)
 
+def on_change_index(x):
+    global depth
+
+    depth = cv.imread(image_files[index], cv.IMREAD_UNCHANGED)
+
 # OpenCV window
 win_name = 'Image Slider'
 cv.namedWindow(win_name)
-cv.createTrackbar('Index', win_name, 0, size - 1, nothing)
-cv.createTrackbar('Max. depth', win_name, 65535, 65535, nothing)
+cv.createTrackbar('Index', win_name, 0, size - 1, on_change_index)
+cv.createTrackbar('Max. depth (m)', win_name, 10, 10, nothing)
+# cv.createTrackbar('Min. depth (mm)', win_name, 1, 1000, nothing)
+# cv.setsTrackbarMin('Min. depth (mm)', win_name, 1)
 cv.createTrackbar('Speckle Size', win_name, 48, 255, nothing)
 cv.setTrackbarMin('Speckle Size', win_name, 0)
 cv.createTrackbar('Speckle Difference', win_name, 200, 255, nothing)
 cv.setTrackbarMin('Speckle Difference', win_name, 0)
 
-current_depth = None
+depth = cv.imread(image_files[0], cv.IMREAD_UNCHANGED)
 
 try:
     with open(os.path.join(path, 'metadata.json'), 'r') as f:
@@ -65,17 +72,17 @@ except TypeError:
 
 points = []
 
-def depth_to_spatial(depth, x, y):
-    global current_depth, HFOV
+def depth_to_spatial(dist, x, y):
+    global HFOV
     return (
-        depth*math.tan(HFOV / 2.0) * (x-current_depth.shape[1]/2) / (current_depth.shape[1] / 2.0),
-        -depth*math.tan(HFOV / 2.0) * (y-current_depth.shape[0]/2) / (current_depth.shape[1] / 2.0),
-        depth) #X,Y,Z
+        dist*math.tan(HFOV / 2.0) * (x-depth.shape[1]/2) / (depth.shape[1] / 2.0),
+        -dist*math.tan(HFOV / 2.0) * (y-depth.shape[0]/2) / (depth.shape[1] / 2.0),
+        dist) #X,Y,Z
 
 def clickEvent(event, x,y, flags, param):
-    global points, current_depth
+    global points, depth
 
-    if current_depth is None:
+    if depth is None:
         return
     
     if event == cv.EVENT_LBUTTONDOWN:
@@ -90,8 +97,8 @@ def clickEvent(event, x,y, flags, param):
 
         (x1, y1), (x2, y2) = points
 
-        d1 = current_depth[y1, x1]
-        d2 = current_depth[y2, x2]
+        d1 = depth[y1, x1]
+        d2 = depth[y2, x2]
 
         z1 = float(d1)/10.0 #mm to cm
         z2 = float(d2)/10.0 #mm to cm
@@ -113,37 +120,13 @@ cv.setMouseCallback(win_name, clickEvent)
 
 while True:
     index = cv.getTrackbarPos('Index', win_name)
-    
-    depth = cv.imread(image_files[index], cv.IMREAD_UNCHANGED)
-    current_depth = depth
 
     maxSpeckleSize = cv.getTrackbarPos('Speckle Size', win_name)
     maxSpeckleDiff = cv.getTrackbarPos('Speckle Difference', win_name)
-    cv.setTrackbarMax('Max. depth', win_name, np.iinfo(depth.dtype).max)
-    maxDepth = cv.getTrackbarPos('Max. depth', win_name)
+    maxDepth = cv.getTrackbarPos('Max. depth (m)', win_name)*1000 #to mm
+    # minDepth_mm = cv.getTrackbarPos('Min. depth (mm)', win_name)
+    minDepth_mm = 1
 
-    if depth is not None:
-        depth_int16 = depth.astype('int16')
-        img = cv.filterSpeckles(depth_int16, 0, maxSpeckleSize, maxSpeckleDiff)[0]
-
-        mask_valid = (depth > 0).astype(np.uint8) * 255 #remove invalid depth
-        mask_range = (depth < maxDepth).astype(np.uint8) * 255 #remove values too high
-        mask = cv.bitwise_and(mask_valid, mask_range)
-
-        colormap = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, mask=mask).astype(np.uint8)
-        # img = cv.cvtColor(img.astype(np.uint16), cv.COLOR_GRAY2BGR)
-        colormap = cv.applyColorMap(colormap,cv.COLORMAP_JET)
-        disp = cv.bitwise_and(colormap, colormap, mask=mask)
-
-        for p in points:
-            disp = cv.circle(disp, p, 5, (0, 0, 255), 1)
-        
-        if len(points) == 2:
-            disp = cv.line(disp, pt1=points[0], pt2=points[1], color=(0,0,255), thickness=1)
-
-        cv.imshow(win_name, disp)
-        cv.setWindowTitle(win_name, image_files[index]) # Shows file name of current image
-    
     key = cv.waitKey(1)
     if key == ord('q'):
         break
@@ -158,11 +141,40 @@ while True:
         cv.setTrackbarPos('Index', win_name, index)
         points = []
     elif key == ord('r'):
+        print('Refreshing folder')
         #Refresh folder
         image_files = glob.glob(os.path.join(path, '*.png'))
         size = len(image_files)
         if not image_files:
             print("No images found.")
             exit()
+        
+        cv.setTrackbarMax('Index', win_name, size-1)
+        index = max(min(size-1, index),0)
+        cv.setTrackbarPos(index)
+    
+    if depth is None:
+        continue
+
+    depth_int16 = depth.astype(np.int16)
+    img = cv.filterSpeckles(depth_int16, 0, maxSpeckleSize, maxSpeckleDiff)[0]
+
+    mask_valid = (img > 0).astype(np.uint8) * 255 #remove invalid depth
+    mask_range = (img < maxDepth).astype(np.uint8) * 255 #remove values too high
+    mask = cv.bitwise_and(mask_valid, mask_range)
+
+    colormap = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, mask=mask).astype(np.uint8)
+    # img = cv.cvtColor(img.astype(np.uint16), cv.COLOR_GRAY2BGR)
+    colormap = cv.applyColorMap(colormap,cv.COLORMAP_TURBO)
+    disp = cv.bitwise_and(colormap, colormap, mask=mask)
+
+    for p in points:
+        disp = cv.circle(disp, p, 5, (0, 0, 255), 1)
+    
+    if len(points) == 2:
+        disp = cv.line(disp, pt1=points[0], pt2=points[1], color=(0,0,255), thickness=1)
+
+    cv.imshow(win_name, disp)
+    cv.setWindowTitle(win_name, image_files[index]) # Shows file name of current image
         
 cv.destroyAllWindows()
