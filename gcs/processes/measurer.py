@@ -47,6 +47,11 @@ size = len(image_files)
 win_name = 'Image Slider'
 cv.namedWindow(win_name)
 cv.createTrackbar('Index', win_name, 0, size - 1, nothing)
+cv.createTrackbar('Max. depth', win_name, 65535, 65535, nothing)
+cv.createTrackbar('Speckle Size', win_name, 48, 255, nothing)
+cv.setTrackbarMin('Speckle Size', win_name, 0)
+cv.createTrackbar('Speckle Difference', win_name, 200, 255, nothing)
+cv.setTrackbarMin('Speckle Difference', win_name, 0)
 
 current_depth = None
 
@@ -112,18 +117,31 @@ while True:
     depth = cv.imread(image_files[index], cv.IMREAD_UNCHANGED)
     current_depth = depth
 
+    maxSpeckleSize = cv.getTrackbarPos('Speckle Size', win_name)
+    maxSpeckleDiff = cv.getTrackbarPos('Speckle Difference', win_name)
+    cv.setTrackbarMax('Max. depth', win_name, np.iinfo(depth.dtype).max)
+    maxDepth = cv.getTrackbarPos('Max. depth', win_name)
+
     if depth is not None:
-        img = cv.cvtColor(depth, cv.COLOR_GRAY2BGR)
-        depth_vis = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX).astype(np.uint8)
-        depth_vis = cv.applyColorMap(depth_vis,cv.COLORMAP_JET)
+        depth_int16 = depth.astype('int16')
+        img = cv.filterSpeckles(depth_int16, 0, maxSpeckleSize, maxSpeckleDiff)[0]
+
+        mask_valid = (depth > 0).astype(np.uint8) * 255 #remove invalid depth
+        mask_range = (depth < maxDepth).astype(np.uint8) * 255 #remove values too high
+        mask = cv.bitwise_and(mask_valid, mask_range)
+
+        colormap = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, mask=mask).astype(np.uint8)
+        # img = cv.cvtColor(img.astype(np.uint16), cv.COLOR_GRAY2BGR)
+        colormap = cv.applyColorMap(colormap,cv.COLORMAP_JET)
+        disp = cv.bitwise_and(colormap, colormap, mask=mask)
 
         for p in points:
-            depth_vis = cv.circle(depth_vis, p, 5, (0, 0, 255), 1)
+            disp = cv.circle(disp, p, 5, (0, 0, 255), 1)
         
         if len(points) == 2:
-            depth_vis = cv.line(depth_vis, pt1=points[0], pt2=points[1], color=(0,0,255), thickness=1)
+            disp = cv.line(disp, pt1=points[0], pt2=points[1], color=(0,0,255), thickness=1)
 
-        cv.imshow(win_name, depth_vis)
+        cv.imshow(win_name, disp)
         cv.setWindowTitle(win_name, image_files[index]) # Shows file name of current image
     
     key = cv.waitKey(1)
