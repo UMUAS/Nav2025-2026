@@ -10,13 +10,16 @@ import argparse
 from rich.console import Console
 from rich.panel import Panel
 
+from utils import gcs_utils
+
 parser = argparse.ArgumentParser(description='View depth frames and measure relative distances between physical points')
 parser.add_argument('--path', default='frames', type=str, help='Directory to folder with depth frames')
 args = parser.parse_args()
 
 path = args.path
-image_files = glob.glob(os.path.join(path, '*.png'))
-if not image_files:
+depth_files = glob.glob(os.path.join(path, 'depth', 'depth_*.png'))
+color_files = glob.glob(os.path.join(path, 'color', 'color_*.jpg'))
+if not depth_files:
     print("No images found.")
     exit()
 
@@ -41,26 +44,34 @@ console.print(f"\t\\[r] = Refresh folder.")
 console.print(f"\t\\[a] = Decrement index.")
 console.print(f"\t\\[d] = Increment index.")
 
-size = len(image_files)
+size = len(depth_files)
 
 def on_change_index(x):
-    global depth
+    global depth, color
 
-    depth = cv.imread(image_files[index], cv.IMREAD_UNCHANGED)
+    depth = cv.imread(depth_files[index], cv.IMREAD_UNCHANGED)
+    color = None
+    if index < len(color_files) and color_files[index] is not None:
+        color = cv.imread(color_files[index], cv.IMREAD_UNCHANGED)
 
 # OpenCV window
-win_name = 'Image Slider'
-cv.namedWindow(win_name)
-cv.createTrackbar('Index', win_name, 0, size - 1, on_change_index)
-cv.createTrackbar('Max. depth (m)', win_name, 10, 10, nothing)
+WIN_NAME = 'Image Slider'
+cv.namedWindow(WIN_NAME)
+cv.createTrackbar('Index', WIN_NAME, 0, size - 1, on_change_index)
+cv.createTrackbar('Max. depth (cm)', WIN_NAME, 3000, 3000, nothing)
+cv.setTrackbarMin('Max. depth (cm)', WIN_NAME, 1)
 # cv.createTrackbar('Min. depth (mm)', win_name, 1, 1000, nothing)
 # cv.setsTrackbarMin('Min. depth (mm)', win_name, 1)
-cv.createTrackbar('Speckle Size', win_name, 48, 255, nothing)
-cv.setTrackbarMin('Speckle Size', win_name, 0)
-cv.createTrackbar('Speckle Difference', win_name, 200, 255, nothing)
-cv.setTrackbarMin('Speckle Difference', win_name, 0)
+cv.createTrackbar('Speckle Size', WIN_NAME, 48, 255, nothing)
+cv.setTrackbarMin('Speckle Size', WIN_NAME, 0)
+cv.createTrackbar('Speckle Difference', WIN_NAME, 200, 255, nothing)
+cv.setTrackbarMin('Speckle Difference', WIN_NAME, 0)
+cv.createTrackbar('Depth Overlay %', WIN_NAME, 60, 100, nothing)
 
-depth = cv.imread(image_files[0], cv.IMREAD_UNCHANGED)
+depth = cv.imread(depth_files[0], cv.IMREAD_UNCHANGED)
+color = None
+if color_files[0] is not None:
+    color = cv.imread(color_files[0], cv.IMREAD_COLOR)
 
 try:
     with open(os.path.join(path, 'metadata.json'), 'r') as f:
@@ -116,15 +127,15 @@ def clickEvent(event, x,y, flags, param):
         print(f'Depth2: {z2} cm @ pixel: (x:{x2},y:{y2})')
         print(f'-> Relative distance: {dist_cm} cm ({dist_cm/100:.2f} m)')
 
-cv.setMouseCallback(win_name, clickEvent)
+cv.setMouseCallback(WIN_NAME, clickEvent)
 
 while True:
-    index = cv.getTrackbarPos('Index', win_name)
+    index = cv.getTrackbarPos('Index', WIN_NAME)
 
-    maxSpeckleSize = cv.getTrackbarPos('Speckle Size', win_name)
-    maxSpeckleDiff = cv.getTrackbarPos('Speckle Difference', win_name)
-    maxDepth = cv.getTrackbarPos('Max. depth (m)', win_name)*1000 #to mm
-    # minDepth_mm = cv.getTrackbarPos('Min. depth (mm)', win_name)
+    maxSpeckleSize = cv.getTrackbarPos('Speckle Size', WIN_NAME)
+    maxSpeckleDiff = cv.getTrackbarPos('Speckle Difference', WIN_NAME)
+    maxDepth = cv.getTrackbarPos('Max. depth (cm)', WIN_NAME)*10 #to mm
+    depthBlend = cv.getTrackbarPos('Depth Overlay %', WIN_NAME)/100.0
     minDepth_mm = 1
 
     key = cv.waitKey(1)
@@ -133,40 +144,31 @@ while True:
     elif key == ord('d'):
         #Increment index
         index = min(index+1, size-1)
-        cv.setTrackbarPos('Index', win_name, index)
+        cv.setTrackbarPos('Index', WIN_NAME, index)
         points = []
     elif key == ord('a'):
         #Decrement index
         index = max(index-1, 0)
-        cv.setTrackbarPos('Index', win_name, index)
+        cv.setTrackbarPos('Index', WIN_NAME, index)
         points = []
     elif key == ord('r'):
         print('Refreshing folder')
         #Refresh folder
-        image_files = glob.glob(os.path.join(path, '*.png'))
-        size = len(image_files)
-        if not image_files:
+        depth_files = glob.glob(os.path.join(path, 'depth', 'depth_*.png'))
+        color_files = glob.glob(os.path.join(path, 'color', 'color_*.png'))
+        size = len(depth_files)
+        if not depth_files:
             print("No images found.")
             exit()
         
-        cv.setTrackbarMax('Index', win_name, size-1)
+        cv.setTrackbarMax('Index', WIN_NAME, size-1)
         index = max(min(size-1, index),0)
         cv.setTrackbarPos(index)
     
     if depth is None:
         continue
 
-    depth_int16 = depth.astype(np.int16)
-    img = cv.filterSpeckles(depth_int16, 0, maxSpeckleSize, maxSpeckleDiff)[0]
-
-    mask_valid = (img > 0).astype(np.uint8) * 255 #remove invalid depth
-    mask_range = (img < maxDepth).astype(np.uint8) * 255 #remove values too high
-    mask = cv.bitwise_and(mask_valid, mask_range)
-
-    colormap = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, mask=mask).astype(np.uint8)
-    # img = cv.cvtColor(img.astype(np.uint16), cv.COLOR_GRAY2BGR)
-    colormap = cv.applyColorMap(colormap,cv.COLORMAP_TURBO)
-    disp = cv.bitwise_and(colormap, colormap, mask=mask)
+    disp = gcs_utils.visualize(depth, color, maxSpeckleSize, maxSpeckleDiff, maxDepth, depthBlend)
 
     for p in points:
         disp = cv.circle(disp, p, 5, (0, 0, 255), 1)
@@ -174,7 +176,7 @@ while True:
     if len(points) == 2:
         disp = cv.line(disp, pt1=points[0], pt2=points[1], color=(0,0,255), thickness=1)
 
-    cv.imshow(win_name, disp)
-    cv.setWindowTitle(win_name, image_files[index]) # Shows file name of current image
+    cv.imshow(WIN_NAME, disp)
+    cv.setWindowTitle(WIN_NAME, depth_files[index]) # Shows file name of current image
         
 cv.destroyAllWindows()
