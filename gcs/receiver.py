@@ -27,8 +27,8 @@ import numpy as np
 
 from utils import gcs_utils
 
-# HOST = "100.89.62.208" #Raspberry Pi 4's Meshnet IP 
-HOST = '127.0.0.1'
+HOST = "100.89.62.208" #Raspberry Pi 4's Meshnet IP 
+# HOST = '127.0.0.1'
 PORT = 5000
 WIN_NAME = 'frame_vis'
 SAVE_DIR = Path("frames")
