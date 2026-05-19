@@ -21,4 +21,5 @@ def visualize(depth_frame, color_frame, max_speckle_size, max_speckle_diff, max_
     if color_frame is None:
         return vis_depth
     else:
-        return cv.addWeighted(color_frame, (1.0-depth_blend), vis_depth, depth_blend, 0)
+        h,w = vis_depth.shape[:2]
+        return cv.addWeighted(cv.resize(color_frame, (w,h)), (1.0-depth_blend), vis_depth, depth_blend, 0)

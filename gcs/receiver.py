@@ -3,14 +3,10 @@
 #   
 #   Press:
 #       [q] - quit
-#       [s] - Request frames switch (on/off)
-#
-#   Sends:
-#       [timestamp:uint64]
-#       [width:uint32]
-#       [height:uint32]
-#       [payload_size:uint32]
-#       [png bytes]
+#       [s] - Request a frame
+#       [t] - Request frames switch (on/off)
+#       [i] - Toggle IR light
+#       [p] - Toggle preview mode (low/high quality stream)
 
 import os
 import sys
@@ -31,15 +27,15 @@ import numpy as np
 
 from utils import gcs_utils
 
-HOST = "100.89.62.208" #Raspberry Pi 4's Meshnet IP 
+# HOST = "100.89.62.208" #Raspberry Pi 4's Meshnet IP 
+HOST = '127.0.0.1'
 PORT = 5000
+WIN_NAME = 'frame_vis'
+SAVE_DIR = Path("frames")
 
 console = Console()
 
-WIN_NAME = 'frame_vis'
-
-SAVE_DIR = Path("frames")
-(SAVE_DIR / 'depth').mkdir(parents=True, exist_ok=True)
+Path(SAVE_DIR / 'depth').mkdir(parents=True, exist_ok=True)
 Path(SAVE_DIR / 'color').mkdir(exist_ok=True)
 
 current_depth = None
@@ -47,9 +43,11 @@ current_color = None
 current_ts = None
 
 req_auto = False
+preview = True
 running = True
 
 save_queue = queue.Queue()
+cmd_queue = queue.Queue()
 
 def recv_exact(sock, n):
     """Receive exactly n bytes from a socket."""
@@ -65,8 +63,11 @@ def recv_exact(sock, n):
 def nothing(x):
     pass
 
-def getFrame(sock:socket.socket):
-    sock.sendall(b"GET_FRAME")
+def getFrame(sock:socket.socket, is_preview):
+    if is_preview:
+        sock.sendall(b"GET_FRAME")
+    else:
+        sock.sendall(b"GET_FRAME_HQ")
 
     header = sock.recv(16) # 8 + 4 + 4 = 16 bytes
     ts, depth_size, color_size = struct.unpack("!QII", header)
@@ -93,19 +94,31 @@ def listen(sock:socket.socket):
             json.dump(HFOV, f)
 
         while running:
-            if not req_auto:
+            try:
+                cmd = cmd_queue.get_nowait()
+            except queue.Empty:
+                cmd = None
+            
+            if cmd == 'TOGGLE_IR':
+                sock.sendall(b"TOGGLE_IR")
+                cmd_queue.task_done()
+
+            if(not req_auto and cmd != 'GET_FRAME_HQ'):
                 continue
             
-            data = getFrame(sock)
+            is_preview = preview and cmd != 'GET_FRAME_HQ'
+            data = getFrame(sock, is_preview)
             
             current_ts = data[0]
             current_depth = data[1]
             current_color = data[2]
             
             save_queue.put(data)
-
-            delay = cv.getTrackbarPos('Delay (s)', WIN_NAME)
-            time.sleep(delay)
+            if cmd != 'GET_FRAME_HQ':
+                delay = cv.getTrackbarPos('Delay (s)', WIN_NAME)
+                time.sleep(delay)
+            else:
+                cmd_queue.task_done()
     except Exception as e:
         console.print(f"[red]Listener error:[/red] {e}")
     finally:
@@ -132,9 +145,9 @@ def save_worker():
         save_queue.task_done()
 
 def display():
-    global running, current_depth, current_color, current_ts, req_auto
+    global running, current_depth, current_color, current_ts, req_auto, preview
 
-    cv.namedWindow(WIN_NAME)
+    cv.namedWindow(WIN_NAME, cv.WINDOW_NORMAL)
 
     cv.createTrackbar('Delay (s)', WIN_NAME, 0, 10, nothing)
     cv.createTrackbar('Depth Overlay %', WIN_NAME, 0, 100, nothing)
@@ -149,8 +162,17 @@ def display():
             running = False
             break
         elif key == ord('s'):
+            cmd_queue.put('GET_FRAME_HQ')
+            console.print('Requesting frame.')
+        elif key == ord('t'):
             req_auto = not req_auto
             console.print('Requesting frames: ', '[green]on[/green]' if req_auto else '[red]off[/red]')
+        elif key == ord('i'):
+            cmd_queue.put('TOGGLE_IR')
+            console.print('[yellow]Toggling IR lights.[/yellow]')
+        elif key == ord('p'):
+            preview = not preview
+            console.print('Toggling preview mode:', '[green]on[/green]' if preview else '[red]off[/red]')
 
         if current_depth is None:
             continue
@@ -164,7 +186,6 @@ def display():
         depthBlend = cv.getTrackbarPos('Depth Overlay %', WIN_NAME)/100.0
 
         disp = gcs_utils.visualize(current_depth, current_color, maxSpeckleSize, maxSpeckleDiff, maxDepth, depthBlend)
-
         cv.imshow(WIN_NAME, disp)
 
     cv.destroyAllWindows()
@@ -184,7 +205,10 @@ def main():
 
     console.print("\n[bold yellow]Inputs:[/bold yellow]")
     console.print(f"\t[red]\\[q] = Quit.[/red]")
-    console.print(f"\t\\[s] = Request frames switch (on/off).")
+    console.print(f"\t\\[s] = Request single frame.")
+    console.print(f"\t\\[t] = Request frames switch (on/off).")
+    console.print(f"\t\\[i] = Toggle IR lights (on/off).")
+    console.print(f"\t\\[p] = Toggle preview mode (low/high quality stream).")
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print('Connecting to TCP server...')
