@@ -35,14 +35,13 @@ description = (
     "[yellow]Click 2 points to measure their distance in [bold]millimeters[/bold][yellow]"
 )
 
-# Title + description panel
 console.print(Panel.fit(f"{title}\n\n{description}",border_style="blue"))
-
 console.print("\n[bold yellow]Inputs:[/bold yellow]")
 console.print(f"\t[red]\\[q] = Quit.[/red]")
 console.print(f"\t\\[r] = Refresh folder.")
 console.print(f"\t\\[a] = Decrement index.")
 console.print(f"\t\\[d] = Increment index.")
+console.print(f"\t\\[t] = Toggle between showing depth/color only.")
 
 size = len(depth_files)
 
@@ -194,7 +193,12 @@ while True:
         cv.setTrackbarMax('Index', WIN_NAME, size-1)
         index = max(min(size-1, index),0)
         cv.setTrackbarPos(index)
-    
+    elif key == ord('t'):
+        if (depthBlend == 1.0):
+            cv.setTrackbarPos('Depth Overlay %', WIN_NAME, 0)
+        else:
+            cv.setTrackbarPos('Depth Overlay %', WIN_NAME, 100)
+
     if depth is None:
         continue
 
