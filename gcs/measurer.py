@@ -192,7 +192,7 @@ while True:
         
         cv.setTrackbarMax('Index', WIN_NAME, size-1)
         index = max(min(size-1, index),0)
-        cv.setTrackbarPos(index)
+        cv.setTrackbarPos('Index', WIN_NAME, index)
     elif key == ord('t'):
         if (depthBlend == 1.0):
             cv.setTrackbarPos('Depth Overlay %', WIN_NAME, 0)
